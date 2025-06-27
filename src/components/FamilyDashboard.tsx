@@ -142,7 +142,7 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
                   <div key={relationship} className="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
                     <span className="font-medium text-gray-800 capitalize">{relationship}</span>
                     <span className="bg-gradient-to-r from-green-600 to-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                      {count}
+                      {count as number}
                     </span>
                   </div>
                 ))}
