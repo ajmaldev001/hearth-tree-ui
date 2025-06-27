@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import SignIn from '../components/Auth/SignIn';
+import SignUp from '../components/Auth/SignUp';
 import FamilyRegistration from '../components/FamilyRegistration';
 import FamilyDashboard from '../components/FamilyDashboard';
 import FamilyTree from '../components/FamilyTree';
@@ -24,12 +26,39 @@ interface FamilyData {
 }
 
 const Index = () => {
+  const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentView, setCurrentView] = useState<'registration' | 'dashboard' | 'tree'>('registration');
   const [familyData, setFamilyData] = useState<FamilyData | null>(null);
+  const [userPhone, setUserPhone] = useState<string>('');
+
+  const handleSignIn = (phone: string) => {
+    setUserPhone(phone);
+    setIsAuthenticated(true);
+    // Check if user has existing family data
+    const existingData = localStorage.getItem(`family_${phone}`);
+    if (existingData) {
+      setFamilyData(JSON.parse(existingData));
+      setCurrentView('dashboard');
+    } else {
+      setCurrentView('registration');
+    }
+  };
+
+  const handleSignUp = (userData: any) => {
+    setUserPhone(userData.head.phone);
+    setFamilyData(userData);
+    setIsAuthenticated(true);
+    setCurrentView('dashboard');
+    // Save to localStorage
+    localStorage.setItem(`family_${userData.head.phone}`, JSON.stringify(userData));
+  };
 
   const handleRegistrationComplete = (data: FamilyData) => {
     setFamilyData(data);
     setCurrentView('dashboard');
+    // Save to localStorage
+    localStorage.setItem(`family_${userPhone}`, JSON.stringify(data));
   };
 
   const handleViewTree = () => {
@@ -41,12 +70,31 @@ const Index = () => {
   };
 
   const handleViewChange = (view: 'registration' | 'dashboard' | 'tree') => {
-    // Prevent navigation to dashboard/tree without family data
     if ((view === 'dashboard' || view === 'tree') && !familyData) {
       return;
     }
     setCurrentView(view);
   };
+
+  // Show authentication screens if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <>
+        {authView === 'signin' && (
+          <SignIn 
+            onSignIn={handleSignIn}
+            onSwitchToSignUp={() => setAuthView('signup')}
+          />
+        )}
+        {authView === 'signup' && (
+          <SignUp 
+            onSignUp={handleSignUp}
+            onSwitchToSignIn={() => setAuthView('signin')}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen">

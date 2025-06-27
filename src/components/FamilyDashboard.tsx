@@ -1,8 +1,18 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, TreePalm, Heart, Calendar, Phone, Mail, User } from 'lucide-react';
+import { Users, TreePalm, Heart, Calendar, Phone, Mail, User, Edit, Trash2, UserPlus } from 'lucide-react';
+import EditMemberModal from './FamilyManager/EditMemberModal';
+import { toast } from "sonner";
+
+interface FamilyMember {
+  id: string;
+  name: string;
+  relationship: string;
+  age: string;
+  email: string;
+  phone: string;
+}
 
 interface FamilyData {
   head: {
@@ -11,26 +21,48 @@ interface FamilyData {
     phone: string;
     familyName: string;
   };
-  members: Array<{
-    id: string;
-    name: string;
-    relationship: string;
-    age: string;
-    email: string;
-    phone: string;
-  }>;
+  members: FamilyMember[];
   createdAt: string;
 }
 
 const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; onViewTree: () => void }) => {
-  const totalMembers = familyData.members.length + 1; // +1 for family head
-  const relationships = familyData.members.reduce((acc: any, member) => {
+  const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
+  const [members, setMembers] = useState<FamilyMember[]>(familyData.members);
+
+  const handleEditMember = (member: FamilyMember) => {
+    setEditingMember(member);
+  };
+
+  const handleSaveMember = (updatedMember: FamilyMember) => {
+    const updatedMembers = members.map(member => 
+      member.id === updatedMember.id ? updatedMember : member
+    );
+    setMembers(updatedMembers);
+    
+    // Update localStorage
+    const updatedFamilyData = { ...familyData, members: updatedMembers };
+    localStorage.setItem(`family_${familyData.head.phone}`, JSON.stringify(updatedFamilyData));
+  };
+
+  const handleDeleteMember = (memberId: string) => {
+    const updatedMembers = members.filter(member => member.id !== memberId);
+    setMembers(updatedMembers);
+    
+    // Update localStorage
+    const updatedFamilyData = { ...familyData, members: updatedMembers };
+    localStorage.setItem(`family_${familyData.head.phone}`, JSON.stringify(updatedFamilyData));
+    
+    toast.success("Family member removed successfully");
+  };
+
+  const totalMembers = members.length + 1;
+  const relationships = members.reduce((acc: any, member) => {
     acc[member.relationship] = (acc[member.relationship] || 0) + 1;
     return acc;
   }, {});
 
-  const averageAge = familyData.members.length > 0 
-    ? Math.round(familyData.members.reduce((sum, member) => sum + (parseInt(member.age) || 0), 0) / familyData.members.filter(m => m.age).length)
+  const averageAge = members.length > 0 
+    ? Math.round(members.reduce((sum, member) => sum + (parseInt(member.age) || 0), 0) / members.filter(m => m.age).length)
     : 0;
 
   return (
@@ -154,33 +186,62 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
           </Card>
         </div>
 
-        {/* Family Members List */}
-        {familyData.members.length > 0 && (
+        {/* Family Members List with Edit/Delete */}
+        {members.length > 0 && (
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm mt-8">
             <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                Family Members ({familyData.members.length})
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Family Members ({members.length})
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-white/20 hover:bg-white/30 text-white"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Member
+                </Button>
               </CardTitle>
               <CardDescription className="text-purple-100">
-                All registered family members
+                Manage your family members
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {familyData.members.map((member, index) => (
+                {members.map((member, index) => (
                   <div 
                     key={member.id} 
-                    className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-100 transition-all duration-300 hover:shadow-lg hover:scale-105 animate-fade-in"
+                    className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border-2 border-purple-100 transition-all duration-300 hover:shadow-lg group animate-fade-in"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-800">{member.name}</h4>
+                          <p className="text-sm text-gray-600 capitalize">{member.relationship}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-800">{member.name}</h4>
-                        <p className="text-sm text-gray-600 capitalize">{member.relationship}</p>
+                      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="w-8 h-8 p-0 hover:bg-blue-100"
+                          onClick={() => handleEditMember(member)}
+                        >
+                          <Edit className="w-4 h-4 text-blue-600" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="w-8 h-8 p-0 hover:bg-red-100"
+                          onClick={() => handleDeleteMember(member.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
                       </div>
                     </div>
                     <div className="space-y-2 text-sm">
@@ -189,14 +250,14 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
                           <span className="font-medium">Age:</span> {member.age}
                         </p>
                       )}
-                      {member.email && (
-                        <p className="text-gray-600 truncate">
-                          <span className="font-medium">Email:</span> {member.email}
-                        </p>
-                      )}
                       {member.phone && (
                         <p className="text-gray-600">
                           <span className="font-medium">Phone:</span> {member.phone}
+                        </p>
+                      )}
+                      {member.email && (
+                        <p className="text-gray-600 truncate">
+                          <span className="font-medium">Email:</span> {member.email}
                         </p>
                       )}
                     </div>
@@ -219,6 +280,15 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
           </Button>
         </div>
       </div>
+
+      {/* Edit Member Modal */}
+      {editingMember && (
+        <EditMemberModal
+          member={editingMember}
+          onSave={handleSaveMember}
+          onClose={() => setEditingMember(null)}
+        />
+      )}
     </div>
   );
 };
