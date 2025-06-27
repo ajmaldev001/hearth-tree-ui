@@ -7,15 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Save, User } from 'lucide-react';
 import { toast } from "sonner";
-
-interface FamilyMember {
-  id: string;
-  name: string;
-  relationship: string;
-  age: string;
-  email: string;
-  phone: string;
-}
+import { FamilyMember } from '../../types/family';
 
 interface EditMemberModalProps {
   member: FamilyMember;
@@ -27,7 +19,7 @@ const EditMemberModal = ({ member, onSave, onClose }: EditMemberModalProps) => {
   const [formData, setFormData] = useState<FamilyMember>(member);
 
   const handleSave = () => {
-    if (!formData.name || !formData.relationship) {
+    if (!formData.firstName || !formData.relationWithHead) {
       toast.error("Name and relationship are required");
       return;
     }
@@ -63,18 +55,28 @@ const EditMemberModal = ({ member, onSave, onClose }: EditMemberModalProps) => {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
+            <Label htmlFor="firstName">First Name *</Label>
             <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              placeholder="Enter member name"
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+              placeholder="Enter first name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input
+              id="lastName"
+              value={formData.lastName}
+              onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+              placeholder="Enter last name"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="relationship">Relationship *</Label>
-            <Select value={formData.relationship} onValueChange={(value) => setFormData({...formData, relationship: value})}>
+            <Select value={formData.relationWithHead} onValueChange={(value) => setFormData({...formData, relationWithHead: value})}>
               <SelectTrigger>
                 <SelectValue placeholder="Select relationship" />
               </SelectTrigger>
@@ -94,8 +96,9 @@ const EditMemberModal = ({ member, onSave, onClose }: EditMemberModalProps) => {
             <Label htmlFor="age">Age</Label>
             <Input
               id="age"
+              type="number"
               value={formData.age}
-              onChange={(e) => setFormData({...formData, age: e.target.value})}
+              onChange={(e) => setFormData({...formData, age: parseInt(e.target.value) || 0})}
               placeholder="Enter age"
             />
           </div>
@@ -104,8 +107,8 @@ const EditMemberModal = ({ member, onSave, onClose }: EditMemberModalProps) => {
             <Label htmlFor="phone">Phone</Label>
             <Input
               id="phone"
-              value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              value={formData.phoneNumber || ''}
+              onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
               placeholder="Enter phone number"
             />
           </div>
@@ -115,9 +118,19 @@ const EditMemberModal = ({ member, onSave, onClose }: EditMemberModalProps) => {
             <Input
               id="email"
               type="email"
-              value={formData.email}
+              value={formData.email || ''}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               placeholder="Enter email address"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="occupation">Occupation</Label>
+            <Input
+              id="occupation"
+              value={formData.occupation}
+              onChange={(e) => setFormData({...formData, occupation: e.target.value})}
+              placeholder="Enter occupation"
             />
           </div>
 

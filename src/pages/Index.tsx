@@ -7,14 +7,7 @@ import FamilyMemberRegistration from '../components/Registration/FamilyMemberReg
 import FamilyDashboard from '../components/FamilyDashboard';
 import FamilyTree from '../components/FamilyTree';
 import Navigation from '../components/Navigation';
-import { HeadProfile, FamilyMember } from '../types/family';
-
-interface FamilyData {
-  head: HeadProfile;
-  members: FamilyMember[];
-  createdAt: string;
-  templeAssociation?: string;
-}
+import { HeadProfile, FamilyMember, FamilyData } from '../types/family';
 
 const Index = () => {
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
@@ -89,11 +82,17 @@ const Index = () => {
     setCurrentView('dashboard');
   };
 
-  const handleViewChange = (view: 'head-registration' | 'member-registration' | 'dashboard' | 'tree') => {
+  const handleViewChange = (view: 'dashboard' | 'tree' | 'registration') => {
     if ((view === 'dashboard' || view === 'tree') && !familyData) {
       return;
     }
-    setCurrentView(view);
+    
+    // Map the navigation view to our internal view
+    if (view === 'registration') {
+      setCurrentView('head-registration');
+    } else {
+      setCurrentView(view);
+    }
   };
 
   // Show authentication screens if not authenticated
@@ -122,7 +121,7 @@ const Index = () => {
         <div className="sticky top-0 z-50 p-4">
           <div className="max-w-4xl mx-auto">
             <Navigation 
-              currentView={currentView}
+              currentView={currentView === 'dashboard' ? 'dashboard' : currentView === 'tree' ? 'tree' : 'registration'}
               onViewChange={handleViewChange}
               familyName={familyData.head.firstName + ' ' + familyData.head.lastName}
             />
