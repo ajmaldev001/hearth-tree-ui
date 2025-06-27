@@ -23,7 +23,37 @@ const Index = () => {
     const existingData = localStorage.getItem(`family_${phone}`);
     if (existingData) {
       const data = JSON.parse(existingData);
-      setFamilyData(data);
+      // Convert old format to new format if needed
+      const convertedData: FamilyData = {
+        head: data.head.firstName ? data.head : {
+          // Convert old format to new format
+          firstName: data.head.name?.split(' ')[0] || '',
+          lastName: data.head.name?.split(' ').slice(1).join(' ') || '',
+          age: 0,
+          gender: 'male' as const,
+          maritalStatus: 'single' as const,
+          occupation: '',
+          samajName: '',
+          qualification: '',
+          birthDate: '',
+          bloodGroup: '',
+          exactNatureOfDuties: '',
+          email: data.head.email || '',
+          phoneNumber: data.head.phone || phone,
+          streetName: '',
+          city: '',
+          district: '',
+          state: '',
+          nativeCity: '',
+          nativeState: '',
+          country: '',
+          pincode: ''
+        },
+        members: data.members || [],
+        createdAt: data.createdAt || new Date().toISOString(),
+        templeAssociation: data.templeAssociation || getTempleAssociation('')
+      };
+      setFamilyData(convertedData);
       setCurrentView('dashboard');
     } else {
       setCurrentView('head-registration');
