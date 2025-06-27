@@ -23,45 +23,7 @@ const Index = () => {
     const existingData = localStorage.getItem(`family_${phone}`);
     if (existingData) {
       const data = JSON.parse(existingData);
-      
-      // Check if data is already in the new format
-      if (data.head && data.head.firstName) {
-        // Data is already in new format
-        setFamilyData(data as FamilyData);
-      } else {
-        // Convert old format to new format
-        const convertedData: FamilyData = {
-          head: {
-            firstName: data.head?.name?.split(' ')[0] || '',
-            lastName: data.head?.name?.split(' ').slice(1).join(' ') || '',
-            age: data.head?.age || 0,
-            gender: data.head?.gender || 'male',
-            maritalStatus: data.head?.maritalStatus || 'single',
-            occupation: data.head?.occupation || '',
-            samajName: data.head?.samajName || '',
-            qualification: data.head?.qualification || '',
-            birthDate: data.head?.birthDate || '',
-            bloodGroup: data.head?.bloodGroup || '',
-            exactNatureOfDuties: data.head?.exactNatureOfDuties || '',
-            email: data.head?.email || '',
-            phoneNumber: data.head?.phone || phone,
-            streetName: data.head?.streetName || '',
-            city: data.head?.city || '',
-            district: data.head?.district || '',
-            state: data.head?.state || '',
-            nativeCity: data.head?.nativeCity || '',
-            nativeState: data.head?.nativeState || '',
-            country: data.head?.country || 'India',
-            pincode: data.head?.pincode || ''
-          },
-          members: data.members || [],
-          createdAt: data.createdAt || new Date().toISOString(),
-          templeAssociation: data.templeAssociation || getTempleAssociation(data.head?.samajName || '')
-        };
-        setFamilyData(convertedData);
-        // Save the converted data back to localStorage
-        localStorage.setItem(`family_${phone}`, JSON.stringify(convertedData));
-      }
+      setFamilyData(data as FamilyData);
       setCurrentView('dashboard');
     } else {
       setCurrentView('head-registration');
@@ -118,6 +80,10 @@ const Index = () => {
 
   const handleBackToDashboard = () => {
     setCurrentView('dashboard');
+  };
+
+  const handleAddMember = () => {
+    setCurrentView('member-registration');
   };
 
   const handleViewChange = (view: 'dashboard' | 'tree' | 'registration') => {
@@ -181,7 +147,8 @@ const Index = () => {
       {currentView === 'dashboard' && familyData && (
         <FamilyDashboard 
           familyData={familyData} 
-          onViewTree={handleViewTree} 
+          onViewTree={handleViewTree}
+          onAddMember={handleAddMember}
         />
       )}
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +10,10 @@ import { FamilyData, FamilyMember } from '../types/family';
 interface FamilyDashboardProps {
   familyData: FamilyData;
   onViewTree: () => void;
+  onAddMember: () => void;
 }
 
-const FamilyDashboard = ({ familyData, onViewTree }: FamilyDashboardProps) => {
+const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboardProps) => {
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [members, setMembers] = useState<FamilyMember[]>(familyData.members);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -222,6 +222,15 @@ const FamilyDashboard = ({ familyData, onViewTree }: FamilyDashboardProps) => {
           >
             <TreePalm className="w-6 h-6 mr-2" />
             View Family Tree
+          </Button>
+
+          <Button 
+            onClick={onAddMember}
+            size="lg"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-6 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105"
+          >
+            <UserPlus className="w-6 h-6 mr-2" />
+            Add Family Member
           </Button>
 
           <Button 
