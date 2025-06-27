@@ -2,33 +2,24 @@
 import React, { useState } from 'react';
 import SignIn from '../components/Auth/SignIn';
 import SignUp from '../components/Auth/SignUp';
-import FamilyRegistration from '../components/FamilyRegistration';
+import HeadRegistration from '../components/Registration/HeadRegistration';
+import FamilyMemberRegistration from '../components/Registration/FamilyMemberRegistration';
 import FamilyDashboard from '../components/FamilyDashboard';
 import FamilyTree from '../components/FamilyTree';
 import Navigation from '../components/Navigation';
+import { HeadProfile, FamilyMember } from '../types/family';
 
 interface FamilyData {
-  head: {
-    name: string;
-    email: string;
-    phone: string;
-    familyName: string;
-  };
-  members: Array<{
-    id: string;
-    name: string;
-    relationship: string;
-    age: string;
-    email: string;
-    phone: string;
-  }>;
+  head: HeadProfile;
+  members: FamilyMember[];
   createdAt: string;
+  templeAssociation?: string;
 }
 
 const Index = () => {
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentView, setCurrentView] = useState<'registration' | 'dashboard' | 'tree'>('registration');
+  const [currentView, setCurrentView] = useState<'head-registration' | 'member-registration' | 'dashboard' | 'tree'>('head-registration');
   const [familyData, setFamilyData] = useState<FamilyData | null>(null);
   const [userPhone, setUserPhone] = useState<string>('');
 
@@ -38,27 +29,56 @@ const Index = () => {
     // Check if user has existing family data
     const existingData = localStorage.getItem(`family_${phone}`);
     if (existingData) {
-      setFamilyData(JSON.parse(existingData));
+      const data = JSON.parse(existingData);
+      setFamilyData(data);
       setCurrentView('dashboard');
     } else {
-      setCurrentView('registration');
+      setCurrentView('head-registration');
     }
   };
 
-  const handleSignUp = (userData: any) => {
-    setUserPhone(userData.head.phone);
-    setFamilyData(userData);
+  const handleSignUp = (phone: string) => {
+    setUserPhone(phone);
     setIsAuthenticated(true);
-    setCurrentView('dashboard');
-    // Save to localStorage
-    localStorage.setItem(`family_${userData.head.phone}`, JSON.stringify(userData));
+    setCurrentView('head-registration');
   };
 
-  const handleRegistrationComplete = (data: FamilyData) => {
-    setFamilyData(data);
-    setCurrentView('dashboard');
+  const handleHeadRegistrationComplete = (headData: HeadProfile) => {
+    const newFamilyData: FamilyData = {
+      head: headData,
+      members: [],
+      createdAt: new Date().toISOString(),
+      templeAssociation: getTempleAssociation(headData.samajName)
+    };
+    setFamilyData(newFamilyData);
+    setCurrentView('member-registration');
     // Save to localStorage
-    localStorage.setItem(`family_${userPhone}`, JSON.stringify(data));
+    localStorage.setItem(`family_${userPhone}`, JSON.stringify(newFamilyData));
+  };
+
+  const handleMemberRegistrationComplete = (members: FamilyMember[]) => {
+    if (familyData) {
+      const updatedFamilyData = {
+        ...familyData,
+        members: members
+      };
+      setFamilyData(updatedFamilyData);
+      setCurrentView('dashboard');
+      // Save to localStorage
+      localStorage.setItem(`family_${userPhone}`, JSON.stringify(updatedFamilyData));
+    }
+  };
+
+  const getTempleAssociation = (samajName: string): string => {
+    // Auto-associate temples based on Samaj
+    const templeMapping: { [key: string]: string } = {
+      'Gujarati Samaj': 'Swaminarayan Temple',
+      'Marathi Samaj': 'Ganpati Temple',
+      'Punjabi Samaj': 'Gurudwara',
+      'Tamil Samaj': 'Murugan Temple',
+      'Bengali Samaj': 'Kali Temple'
+    };
+    return templeMapping[samajName] || 'Local Community Temple';
   };
 
   const handleViewTree = () => {
@@ -69,7 +89,7 @@ const Index = () => {
     setCurrentView('dashboard');
   };
 
-  const handleViewChange = (view: 'registration' | 'dashboard' | 'tree') => {
+  const handleViewChange = (view: 'head-registration' | 'member-registration' | 'dashboard' | 'tree') => {
     if ((view === 'dashboard' || view === 'tree') && !familyData) {
       return;
     }
@@ -98,20 +118,27 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      {familyData && (
+      {familyData && currentView !== 'head-registration' && currentView !== 'member-registration' && (
         <div className="sticky top-0 z-50 p-4">
           <div className="max-w-4xl mx-auto">
             <Navigation 
               currentView={currentView}
               onViewChange={handleViewChange}
-              familyName={familyData.head.familyName}
+              familyName={familyData.head.firstName + ' ' + familyData.head.lastName}
             />
           </div>
         </div>
       )}
 
-      {currentView === 'registration' && (
-        <FamilyRegistration onComplete={handleRegistrationComplete} />
+      {currentView === 'head-registration' && (
+        <HeadRegistration onComplete={handleHeadRegistrationComplete} />
+      )}
+
+      {currentView === 'member-registration' && (
+        <FamilyMemberRegistration 
+          onComplete={handleMemberRegistrationComplete}
+          headData={familyData?.head}
+        />
       )}
 
       {currentView === 'dashboard' && familyData && (

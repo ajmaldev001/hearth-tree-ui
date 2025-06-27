@@ -1,33 +1,22 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, TreePalm, Heart, Calendar, Phone, Mail, User, Edit, Trash2, UserPlus } from 'lucide-react';
+import { Users, TreePalm, Heart, Calendar, Phone, Mail, User, Edit, Trash2, UserPlus, MapPin, Download } from 'lucide-react';
 import EditMemberModal from './FamilyManager/EditMemberModal';
+import ExportTree from './FamilyTree/ExportTree';
 import { toast } from "sonner";
+import { FamilyData, FamilyMember } from '../types/family';
 
-interface FamilyMember {
-  id: string;
-  name: string;
-  relationship: string;
-  age: string;
-  email: string;
-  phone: string;
+interface FamilyDashboardProps {
+  familyData: FamilyData;
+  onViewTree: () => void;
 }
 
-interface FamilyData {
-  head: {
-    name: string;
-    email: string;
-    phone: string;
-    familyName: string;
-  };
-  members: FamilyMember[];
-  createdAt: string;
-}
-
-const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; onViewTree: () => void }) => {
+const FamilyDashboard = ({ familyData, onViewTree }: FamilyDashboardProps) => {
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [members, setMembers] = useState<FamilyMember[]>(familyData.members);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   const handleEditMember = (member: FamilyMember) => {
     setEditingMember(member);
@@ -41,7 +30,8 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
     
     // Update localStorage
     const updatedFamilyData = { ...familyData, members: updatedMembers };
-    localStorage.setItem(`family_${familyData.head.phone}`, JSON.stringify(updatedFamilyData));
+    localStorage.setItem(`family_${familyData.head.phoneNumber}`, JSON.stringify(updatedFamilyData));
+    toast.success("Family member updated successfully");
   };
 
   const handleDeleteMember = (memberId: string) => {
@@ -50,19 +40,19 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
     
     // Update localStorage
     const updatedFamilyData = { ...familyData, members: updatedMembers };
-    localStorage.setItem(`family_${familyData.head.phone}`, JSON.stringify(updatedFamilyData));
+    localStorage.setItem(`family_${familyData.head.phoneNumber}`, JSON.stringify(updatedFamilyData));
     
     toast.success("Family member removed successfully");
   };
 
   const totalMembers = members.length + 1;
   const relationships = members.reduce((acc: any, member) => {
-    acc[member.relationship] = (acc[member.relationship] || 0) + 1;
+    acc[member.relationWithHead] = (acc[member.relationWithHead] || 0) + 1;
     return acc;
   }, {});
 
   const averageAge = members.length > 0 
-    ? Math.round(members.reduce((sum, member) => sum + (parseInt(member.age) || 0), 0) / members.filter(m => m.age).length)
+    ? Math.round(members.reduce((sum, member) => sum + (member.age || 0), 0) / members.filter(m => m.age).length)
     : 0;
 
   return (
@@ -76,9 +66,14 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
             </div>
           </div>
           <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            {familyData.head.familyName} Family
+            {familyData.head.firstName} {familyData.head.lastName} Family
           </h1>
           <p className="text-gray-600 text-xl">Welcome to your family dashboard</p>
+          {familyData.templeAssociation && (
+            <p className="text-lg text-indigo-600 font-medium">
+              Associated with: {familyData.templeAssociation}
+            </p>
+          )}
         </div>
 
         {/* Quick Stats */}
@@ -116,43 +111,75 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Family Head Info */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
                 <User className="w-5 h-5 mr-2" />
-                Family Head
+                Family Head Details
               </CardTitle>
               <CardDescription className="text-blue-100">
-                Primary contact and family leader
+                Complete profile information
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                  <User className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-semibold text-gray-800">{familyData.head.name}</p>
-                    <p className="text-sm text-gray-600">Head of Family</p>
+            <CardContent className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                    <User className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        {familyData.head.firstName} {familyData.head.middleName} {familyData.head.lastName}
+                      </p>
+                      <p className="text-sm text-gray-600">Full Name</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                  <Mail className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="font-semibold text-gray-800">{familyData.head.email}</p>
-                    <p className="text-sm text-gray-600">Email Address</p>
+                  
+                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                    <Mail className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="font-semibold text-gray-800">{familyData.head.email}</p>
+                      <p className="text-sm text-gray-600">Email Address</p>
+                    </div>
                   </div>
-                </div>
-                {familyData.head.phone && (
+
                   <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
                     <Phone className="w-5 h-5 text-blue-600" />
                     <div>
-                      <p className="font-semibold text-gray-800">{familyData.head.phone}</p>
+                      <p className="font-semibold text-gray-800">{familyData.head.phoneNumber}</p>
                       <p className="text-sm text-gray-600">Phone Number</p>
                     </div>
                   </div>
-                )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
+                    <User className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-gray-800">{familyData.head.occupation}</p>
+                      <p className="text-sm text-gray-600">Occupation</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
+                    <Users className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-gray-800">{familyData.head.samajName}</p>
+                      <p className="text-sm text-gray-600">Samaj</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
+                    <MapPin className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        {familyData.head.city}, {familyData.head.state}
+                      </p>
+                      <p className="text-sm text-gray-600">Current Location</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -186,9 +213,31 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
           </Card>
         </div>
 
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-4 justify-center mb-8">
+          <Button 
+            onClick={onViewTree}
+            size="lg"
+            className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 py-6 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105"
+          >
+            <TreePalm className="w-6 h-6 mr-2" />
+            View Family Tree
+          </Button>
+
+          <Button 
+            onClick={() => setShowExportModal(true)}
+            size="lg"
+            variant="outline"
+            className="px-8 py-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
+          >
+            <Download className="w-6 h-6 mr-2" />
+            Export Tree
+          </Button>
+        </div>
+
         {/* Family Members List with Edit/Delete */}
         {members.length > 0 && (
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm mt-8">
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -204,7 +253,7 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
                 </Button>
               </CardTitle>
               <CardDescription className="text-purple-100">
-                Manage your family members
+                Manage your family members (Only head can edit/delete)
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -221,8 +270,10 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
                           <User className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-800">{member.name}</h4>
-                          <p className="text-sm text-gray-600 capitalize">{member.relationship}</p>
+                          <h4 className="font-semibold text-gray-800">
+                            {member.firstName} {member.lastName}
+                          </h4>
+                          <p className="text-sm text-gray-600 capitalize">{member.relationWithHead}</p>
                         </div>
                       </div>
                       <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -245,14 +296,15 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
                       </div>
                     </div>
                     <div className="space-y-2 text-sm">
-                      {member.age && (
+                      <p className="text-gray-600">
+                        <span className="font-medium">Age:</span> {member.age}
+                      </p>
+                      <p className="text-gray-600">
+                        <span className="font-medium">Occupation:</span> {member.occupation}
+                      </p>
+                      {member.phoneNumber && (
                         <p className="text-gray-600">
-                          <span className="font-medium">Age:</span> {member.age}
-                        </p>
-                      )}
-                      {member.phone && (
-                        <p className="text-gray-600">
-                          <span className="font-medium">Phone:</span> {member.phone}
+                          <span className="font-medium">Phone:</span> {member.phoneNumber}
                         </p>
                       )}
                       {member.email && (
@@ -260,6 +312,9 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
                           <span className="font-medium">Email:</span> {member.email}
                         </p>
                       )}
+                      <p className="text-gray-600">
+                        <span className="font-medium">Location:</span> {member.city}, {member.state}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -268,27 +323,29 @@ const FamilyDashboard = ({ familyData, onViewTree }: { familyData: FamilyData; o
           </Card>
         )}
 
-        {/* Action Button */}
-        <div className="mt-8 text-center">
-          <Button 
-            onClick={onViewTree}
-            size="lg"
-            className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 py-6 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105"
-          >
-            <TreePalm className="w-6 h-6 mr-2" />
-            View Family Tree
-          </Button>
-        </div>
-      </div>
+        {/* Export Modal */}
+        {showExportModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <ExportTree familyData={{...familyData, members}} />
+              <div className="mt-4 text-center">
+                <Button onClick={() => setShowExportModal(false)} variant="outline">
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Edit Member Modal */}
-      {editingMember && (
-        <EditMemberModal
-          member={editingMember}
-          onSave={handleSaveMember}
-          onClose={() => setEditingMember(null)}
-        />
-      )}
+        {/* Edit Member Modal */}
+        {editingMember && (
+          <EditMemberModal
+            member={editingMember}
+            onSave={handleSaveMember}
+            onClose={() => setEditingMember(null)}
+          />
+        )}
+      </div>
     </div>
   );
 };

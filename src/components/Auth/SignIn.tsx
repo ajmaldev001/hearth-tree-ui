@@ -16,6 +16,8 @@ const SignIn = ({ onSignIn, onSwitchToSignUp }: SignInProps) => {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [resendCount, setResendCount] = useState(0);
+  const [resendTimer, setResendTimer] = useState(0);
 
   const handleSendOTP = () => {
     if (phone.length < 10) {
@@ -23,9 +25,39 @@ const SignIn = ({ onSignIn, onSwitchToSignUp }: SignInProps) => {
       return;
     }
     
-    // Simulate OTP sending
     setOtpSent(true);
+    setResendTimer(30);
     toast.success("OTP sent to your mobile number");
+    
+    // Start countdown timer
+    const timer = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleResendOTP = () => {
+    if (resendTimer > 0) return;
+    
+    setResendCount(prev => prev + 1);
+    setResendTimer(30);
+    toast.success("OTP resent to your mobile number");
+    
+    // Start countdown timer
+    const timer = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const handleVerifyOTP = () => {
@@ -34,7 +66,6 @@ const SignIn = ({ onSignIn, onSwitchToSignUp }: SignInProps) => {
       return;
     }
     
-    // Simulate OTP verification
     toast.success("Signed in successfully!");
     onSignIn(phone);
   };
@@ -86,6 +117,24 @@ const SignIn = ({ onSignIn, onSwitchToSignUp }: SignInProps) => {
                   />
                 </div>
               </div>
+
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleResendOTP}
+                  disabled={resendTimer > 0}
+                  className={`text-sm ${
+                    resendTimer > 0 
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : 'text-blue-600 hover:text-blue-700'
+                  }`}
+                >
+                  {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+                </button>
+                <span className="text-sm text-gray-500">
+                  Attempts: {resendCount}/3
+                </span>
+              </div>
+
               <Button onClick={handleVerifyOTP} className="w-full bg-gradient-to-r from-green-600 to-blue-600">
                 Verify & Sign In
                 <ArrowRight className="w-4 h-4 ml-2" />

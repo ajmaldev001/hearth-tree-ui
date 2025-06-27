@@ -4,32 +4,60 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Phone, User, Users, Lock, ArrowRight } from 'lucide-react';
+import { Phone, Lock, ArrowRight } from 'lucide-react';
 import { toast } from "sonner";
 
 interface SignUpProps {
-  onSignUp: (userData: any) => void;
+  onSignUp: (phone: string) => void;
   onSwitchToSignIn: () => void;
 }
 
 const SignUp = ({ onSignUp, onSwitchToSignIn }: SignUpProps) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    familyName: '',
-    phone: '',
-    email: ''
-  });
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [resendCount, setResendCount] = useState(0);
+  const [resendTimer, setResendTimer] = useState(0);
 
   const handleSendOTP = () => {
-    if (!formData.name || !formData.familyName || formData.phone.length < 10) {
-      toast.error("Please fill all required fields");
+    if (phone.length < 10) {
+      toast.error("Please enter a valid phone number");
       return;
     }
     
     setOtpSent(true);
+    setResendTimer(30);
     toast.success("OTP sent to your mobile number");
+    
+    // Start countdown timer
+    const timer = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleResendOTP = () => {
+    if (resendTimer > 0) return;
+    
+    setResendCount(prev => prev + 1);
+    setResendTimer(30);
+    toast.success("OTP resent to your mobile number");
+    
+    // Start countdown timer
+    const timer = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const handleVerifyAndSignUp = () => {
@@ -38,19 +66,8 @@ const SignUp = ({ onSignUp, onSwitchToSignIn }: SignUpProps) => {
       return;
     }
     
-    const userData = {
-      head: {
-        name: formData.name,
-        familyName: formData.familyName,
-        phone: formData.phone,
-        email: formData.email
-      },
-      members: [],
-      createdAt: new Date().toISOString()
-    };
-    
     toast.success("Account created successfully!");
-    onSignUp(userData);
+    onSignUp(phone);
   };
 
   return (
@@ -66,34 +83,6 @@ const SignUp = ({ onSignUp, onSwitchToSignIn }: SignUpProps) => {
           {!otpSent ? (
             <>
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="name"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="familyName">Family Name *</Label>
-                <div className="relative">
-                  <Users className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="familyName"
-                    placeholder="Enter family name"
-                    value={formData.familyName}
-                    onChange={(e) => setFormData({...formData, familyName: e.target.value})}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="phone">Mobile Number *</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
@@ -101,22 +90,11 @@ const SignUp = ({ onSignUp, onSwitchToSignIn }: SignUpProps) => {
                     id="phone"
                     type="tel"
                     placeholder="Enter mobile number"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     className="pl-10"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email (Optional)</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter email address"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
               </div>
 
               <Button onClick={handleSendOTP} className="w-full bg-gradient-to-r from-green-600 to-blue-600">
@@ -140,6 +118,24 @@ const SignUp = ({ onSignUp, onSwitchToSignIn }: SignUpProps) => {
                   />
                 </div>
               </div>
+
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleResendOTP}
+                  disabled={resendTimer > 0}
+                  className={`text-sm ${
+                    resendTimer > 0 
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : 'text-blue-600 hover:text-blue-700'
+                  }`}
+                >
+                  {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+                </button>
+                <span className="text-sm text-gray-500">
+                  Attempts: {resendCount}/3
+                </span>
+              </div>
+
               <Button onClick={handleVerifyAndSignUp} className="w-full bg-gradient-to-r from-purple-600 to-pink-600">
                 Verify & Create Account
                 <ArrowRight className="w-4 h-4 ml-2" />
