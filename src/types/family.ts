@@ -40,6 +40,13 @@ export interface HeadProfile {
   photo?: string;
 }
 
+export interface FamilyMemberLink {
+  headId: string;
+  headName: string;
+  relationship: string;
+  linkStrength: number;
+}
+
 export interface FamilyMember {
   id: string;
   
@@ -57,6 +64,9 @@ export interface FamilyMember {
   bloodGroup: string;
   photo?: string;
   relationWithHead: string;
+  
+  // Auto-linking Information
+  linkedToHead?: FamilyMemberLink;
   
   // Contact Information
   phoneNumber?: string;

@@ -22,9 +22,20 @@ const Index = () => {
     // Check if user has existing family data
     const existingData = localStorage.getItem(`family_${phone}`);
     if (existingData) {
-      const data = JSON.parse(existingData);
-      setFamilyData(data as FamilyData);
-      setCurrentView('dashboard');
+      try {
+        const data = JSON.parse(existingData);
+        // Validate the data structure before setting
+        if (data && data.head && data.head.firstName) {
+          setFamilyData(data as FamilyData);
+          setCurrentView('dashboard');
+        } else {
+          // Invalid data structure, start fresh
+          setCurrentView('head-registration');
+        }
+      } catch (error) {
+        console.error('Error parsing family data:', error);
+        setCurrentView('head-registration');
+      }
     } else {
       setCurrentView('head-registration');
     }
@@ -49,16 +60,61 @@ const Index = () => {
     localStorage.setItem(`family_${userPhone}`, JSON.stringify(newFamilyData));
   };
 
+  const autoLinkFamilyMember = (member: FamilyMember, headData: HeadProfile): FamilyMember => {
+    // Auto-link based on relationship and phone number
+    const linkedMember = {
+      ...member,
+      // Establish connection to head
+      linkedToHead: {
+        headId: headData.phoneNumber, // Using phone as unique identifier
+        headName: `${headData.firstName} ${headData.lastName}`,
+        relationship: member.relationWithHead,
+        linkStrength: calculateLinkStrength(member, headData)
+      }
+    };
+
+    console.log(`Auto-linked ${member.firstName} ${member.lastName} to head ${headData.firstName} ${headData.lastName} as ${member.relationWithHead}`);
+    
+    return linkedMember;
+  };
+
+  const calculateLinkStrength = (member: FamilyMember, headData: HeadProfile): number => {
+    let strength = 0;
+    
+    // Stronger link for direct relationships
+    const directRelationships = ['spouse', 'son', 'daughter', 'father', 'mother'];
+    if (directRelationships.includes(member.relationWithHead.toLowerCase())) {
+      strength += 3;
+    }
+    
+    // Additional strength for shared contact info
+    if (member.phoneNumber && member.phoneNumber === headData.phoneNumber) {
+      strength += 2;
+    }
+    
+    // Additional strength for same address
+    if (member.city === headData.city && member.state === headData.state) {
+      strength += 1;
+    }
+    
+    return Math.min(strength, 5); // Cap at 5
+  };
+
   const handleMemberRegistrationComplete = (members: FamilyMember[]) => {
     if (familyData) {
+      // Auto-link each member to the head
+      const linkedMembers = members.map(member => autoLinkFamilyMember(member, familyData.head));
+      
       const updatedFamilyData = {
         ...familyData,
-        members: members
+        members: linkedMembers
       };
       setFamilyData(updatedFamilyData);
       setCurrentView('dashboard');
       // Save to localStorage
       localStorage.setItem(`family_${userPhone}`, JSON.stringify(updatedFamilyData));
+      
+      console.log(`Successfully auto-linked ${linkedMembers.length} family members to head`);
     }
   };
 

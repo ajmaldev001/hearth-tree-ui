@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, TreePalm, Heart, Calendar, Phone, Mail, User, Edit, Trash2, UserPlus, MapPin, Download } from 'lucide-react';
+import { Users, TreePalm, Heart, Calendar, Phone, Mail, User, Edit, Trash2, UserPlus, MapPin, Download, Link } from 'lucide-react';
 import EditMemberModal from './FamilyManager/EditMemberModal';
 import ExportTree from './FamilyTree/ExportTree';
 import { toast } from "sonner";
@@ -55,6 +55,8 @@ const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboar
     ? Math.round(members.reduce((sum, member) => sum + (member.age || 0), 0) / members.filter(m => m.age).length)
     : 0;
 
+  const linkedMembersCount = members.filter(member => member.linkedToHead).length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -77,7 +79,7 @@ const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboar
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card className="shadow-xl border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white transform hover:scale-105 transition-all duration-300">
             <CardContent className="p-6 text-center">
               <Users className="w-12 h-12 mx-auto mb-4 opacity-80" />
@@ -102,6 +104,14 @@ const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboar
             </CardContent>
           </Card>
 
+          <Card className="shadow-xl border-0 bg-gradient-to-br from-orange-500 to-orange-600 text-white transform hover:scale-105 transition-all duration-300">
+            <CardContent className="p-6 text-center">
+              <Link className="w-12 h-12 mx-auto mb-4 opacity-80" />
+              <h3 className="text-3xl font-bold mb-2">{linkedMembersCount}</h3>
+              <p className="text-orange-100">Auto-Linked</p>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-xl border-0 bg-gradient-to-br from-pink-500 to-pink-600 text-white transform hover:scale-105 transition-all duration-300">
             <CardContent className="p-6 text-center">
               <Heart className="w-12 h-12 mx-auto mb-4 opacity-80" />
@@ -111,8 +121,8 @@ const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboar
           </Card>
         </div>
 
+        {/* Family Head Info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Family Head Info */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center">
@@ -244,7 +254,7 @@ const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboar
           </Button>
         </div>
 
-        {/* Family Members List with Edit/Delete */}
+        {/* Family Members List with Edit/Delete and Auto-Link Info */}
         {members.length > 0 && (
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
@@ -254,6 +264,7 @@ const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboar
                   Family Members ({members.length})
                 </div>
                 <Button
+                  onClick={onAddMember}
                   size="sm"
                   className="bg-white/20 hover:bg-white/30 text-white"
                 >
@@ -262,7 +273,7 @@ const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboar
                 </Button>
               </CardTitle>
               <CardDescription className="text-purple-100">
-                Manage your family members (Only head can edit/delete)
+                Manage your family members with auto-linking information
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -324,6 +335,17 @@ const FamilyDashboard = ({ familyData, onViewTree, onAddMember }: FamilyDashboar
                       <p className="text-gray-600">
                         <span className="font-medium">Location:</span> {member.city}, {member.state}
                       </p>
+                      {member.linkedToHead && (
+                        <div className="mt-3 p-2 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
+                          <div className="flex items-center space-x-2">
+                            <Link className="w-4 h-4 text-orange-600" />
+                            <span className="text-xs font-medium text-orange-800">Auto-Linked</span>
+                          </div>
+                          <p className="text-xs text-orange-700 mt-1">
+                            Link Strength: {member.linkedToHead.linkStrength}/5
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
